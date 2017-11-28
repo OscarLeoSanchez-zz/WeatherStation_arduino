@@ -1,28 +1,38 @@
-#define control_pin 9
-#define rot_pin A0
+#include <stdint.h>
+#include "SparkFunBME280.h"
+#include "Wire.h"
+#include "SPI.h"
 
+//Variables encoder direccion
+#define pinDirection A0
+
+//Variables encoder velocidad
 int hits = 0;
 float wheel_radius = 1;
-
 volatile unsigned int current_time;
 long time_interval = 1000;
+ 
+//Variables sensor BME280
+
+BME280 sensorPHT;
 
 
+
+//Funciones encoder velocidad
 float getSpeed(){
 	float velocity = (hits*(wheel_radius*59))/(time_interval); 
 	hits = 0;
 	current_time = millis();
 	return velocity;
-
-
 }
 
 void count () {
 	hits++;
 }
 
+//Funciones encoder direccion
 String getDirecction(){
-        int reader = analogRead(rot_pin);
+        int reader = analogRead(pinDirection);
         if       (reader >=0 && reader < 32 )  return "N";
         else if (reader >=32 && reader < 96 ) return "NNE";
         else if (reader >=96 && reader < 160 ) return "NE";
@@ -40,23 +50,29 @@ String getDirecction(){
         else if (reader >=863 && reader < 927 ) return "NO";
         else if (reader >=927 && reader < 991 ) return "NNO";
         return "N";        
-        
 }
+
+//Funciones sensor BME280
+
 
 void setup () { 
 	Serial.begin(9600);
-	pinMode(rot_pin, INPUT); //
+	pinMode(pinDirection, INPUT); //
 	attachInterrupt(0, count, CHANGE);
 	current_time = millis();
-	pinMode(control_pin, OUTPUT);
-
+  sensorPHT.settings.commInterface = SPI_MODE;
+  sensorPHT.settings.chipSelectPin = 53;
+  sensorPHT.settings.runMode = 3; //  3, Normal mode
+  sensorPHT.settings.tStandby = 0; //  0, 0.5ms
+  sensorPHT.settings.filter = 0; //  0, filter off
+  sensorPHT.settings.tempOverSample = 1;
+  sensorPHT.settings.pressOverSample = 1;
+  sensorPHT.settings.humidOverSample = 1;
+  delay(10);
+  sensorPHT.begin();
 }
 
-void loop (){
-	int reader = analogRead(rot_pin);
-	analogWrite(control_pin, 25);
-
-	Serial.print(reader*0.36);	
+void loop (){	
 	if (millis() >= current_time + time_interval){
 		Serial.println(getSpeed());
 	}

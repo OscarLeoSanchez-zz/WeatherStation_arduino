@@ -3,8 +3,19 @@
 #include "Wire.h"
 #include "SPI.h"
 
+
+float var1=0;   // Velocidad viento  m/s
+int var2=0;     // Temperatura  grados celsius
+int var3=0;     // Humedad  %
+int var4=0;     // Presion hPa
+int var5=0;     // Radiacion W/m2
+String var6="";  // Direccion 
+
 //Variables encoder direccion
 #define pinDirection A0
+
+//Variables sensor radiacion
+#define pinRadiation A1
 
 //Variables encoder velocidad
 int hits = 0;
@@ -20,7 +31,7 @@ BME280 sensorPHT;
 
 //Funciones encoder velocidad
 float getSpeed(){
-	float velocity = (hits*(wheel_radius*59))/(time_interval); 
+	float velocity = (hits*(wheel_radius*59)*0.01)/(time_interval); 
 	hits = 0;
 	current_time = millis();
 	return velocity;
@@ -31,7 +42,7 @@ void count () {
 }
 
 //Funciones encoder direccion
-String getDirecction(){
+String getDirection(){
         int reader = analogRead(pinDirection);
         if       (reader >=0 && reader < 32 )  return "N";
         else if (reader >=32 && reader < 96 ) return "NNE";
@@ -52,12 +63,20 @@ String getDirecction(){
         return "N";        
 }
 
-//Funciones sensor BME280
+//Funciones sensor radiacion
+
+int getRadiation(){
+  int rad = (analogRead(pinRadiation)*3*4.8)+30;
+  return rad;
+}
+
+//Funciones programa
 
 
 void setup () { 
 	Serial.begin(9600);
 	pinMode(pinDirection, INPUT); //
+  pinMode(pinRadiation, INPUT);
 	attachInterrupt(0, count, CHANGE);
 	current_time = millis();
   sensorPHT.settings.commInterface = SPI_MODE;
@@ -73,11 +92,16 @@ void setup () {
 }
 
 void loop (){	
+  var2 = sensorPHT.readTempC();
+  var3 = sensorPHT.readFloatHumidity();
+  var4 = sensorPHT.readFloatPressure()/100;
+  var5 = getRadiation();
+  var6 = getDirection();
 	if (millis() >= current_time + time_interval){
-		Serial.println(getSpeed());
+		var1=getSpeed();
 	}
 	
-	delay(1000);
+	delay(500);
 }	
 
 
